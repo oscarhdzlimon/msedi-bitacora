@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: ${urlConexionBd}
+    username: ${userBd}
+    password: ${passwordBd}
+
+edi:
+  seguridad:
+    jwt:
+      secret-key: ${jwtSecretKey}
+      issuer: ${EDI_JWT_ISSUER:msedi-autenticacion}
+      audience: ${EDI_BITACORA_JWT_AUDIENCE:edi}
