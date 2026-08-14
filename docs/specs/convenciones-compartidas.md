@@ -168,8 +168,8 @@ Persistencia:
 
 Catalogos disponibles para el primer alcance:
 
-- `catalogo.evento`: 45 eventos con clave funcional `cve_evento`.
-- `catalogo.mensaje`: MSG001-MSG018.
+- `catalogo.edic_evento`: 45 eventos con clave funcional `cve_evento`.
+- `catalogo.edic_mensaje`: MSG001-MSG018.
 
 `msedi-catalogos` expondra al frontend solamente los catalogos permitidos en su especificacion. Los demas microservicios podran consultar directamente las tablas del esquema `catalogo` que requieran, sin consumir `msedi-catalogos`.
 

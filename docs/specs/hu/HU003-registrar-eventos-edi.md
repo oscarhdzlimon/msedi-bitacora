@@ -36,7 +36,7 @@ Se derivan del Bearer: `user`, `jti` y `sistemaOrigen`. `idEvento`, `stpAlta`, `
 
 ## Comportamiento
 
-1. Validar `cveEvento` contra `catalogo.evento`.
+1. Validar `cveEvento` contra `catalogo.edic_evento`.
 2. Validar la existencia de la transaccion cuando se informe.
 3. Conservar `codigoMensaje` dentro de `refDetalle`.
 4. Insertar el evento sin permitir actualizacion o eliminacion desde la API.
@@ -55,10 +55,10 @@ Se derivan del Bearer: `user`, `jti` y `sistemaOrigen`. `idEvento`, `stpAlta`, `
 
 ## Persistencia
 
-- `catalogo.evento`
-- `catalogo.mensaje`
-- `trazabilidad.transaccion`
-- `trazabilidad.evento_bitacora`
+- `catalogo.edic_evento`
+- `catalogo.edic_mensaje`
+- `trazabilidad.edit_transaccion`
+- `trazabilidad.edit_evento_bitacora`
 
 No se usa un numero de secuencia funcional fijo. El orden se determina mediante la fecha real de ocurrencia y el identificador tecnico como desempate.
 

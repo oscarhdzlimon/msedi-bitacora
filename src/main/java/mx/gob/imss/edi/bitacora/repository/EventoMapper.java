@@ -9,7 +9,7 @@ public interface EventoMapper {
 
     @Select("""
             select id_evento as id_evento, cve_evento as cve_evento
-              from catalogo.evento
+              from catalogo.edic_evento
              where cve_evento = #{cveEvento}
                and ind_activo = true
             """)

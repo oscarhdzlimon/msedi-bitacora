@@ -12,8 +12,8 @@ public interface TransaccionConsultaMapper {
                    t.id_sistema_origen as id_sistema_origen,
                    s.cve_sistema_origen as cve_sistema_origen,
                    t.cve_transaccion as cve_transaccion
-              from trazabilidad.transaccion t
-              join catalogo.sistema_origen s on s.id_sistema_origen = t.id_sistema_origen
+              from trazabilidad.edit_transaccion t
+              join catalogo.edic_sistema_origen s on s.id_sistema_origen = t.id_sistema_origen
              where t.id_transaccion = #{idTransaccion}
             """)
     TransaccionContextoDto buscarContexto(Long idTransaccion);

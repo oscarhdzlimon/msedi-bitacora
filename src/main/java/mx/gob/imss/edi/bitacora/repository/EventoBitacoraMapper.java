@@ -14,7 +14,7 @@ import org.apache.ibatis.annotations.Select;
 public interface EventoBitacoraMapper {
 
     @Insert("""
-            insert into trazabilidad.evento_bitacora (
+            insert into trazabilidad.edit_evento_bitacora (
                 id_evento, id_transaccion, id_sistema_origen,
                 ref_nombre_usuario, ref_error, ref_detalle, ref_sesion,
                 ref_terminal, ref_objeto, cve_operacion, ref_resultado,
@@ -44,9 +44,9 @@ public interface EventoBitacoraMapper {
                    eb.ref_detalle as detalle,
                    eb.stp_ocurrencia as stp_ocurrencia,
                    eb.stp_alta as stp_alta
-              from trazabilidad.evento_bitacora eb
-              join catalogo.evento e on e.id_evento = eb.id_evento
-              join trazabilidad.transaccion t on t.id_transaccion = eb.id_transaccion
+              from trazabilidad.edit_evento_bitacora eb
+              join catalogo.edic_evento e on e.id_evento = eb.id_evento
+              join trazabilidad.edit_transaccion t on t.id_transaccion = eb.id_transaccion
              where eb.ind_activo = true
                and eb.id_transaccion = #{idTransaccion}
              order by eb.stp_ocurrencia, eb.id_evento_bitacora
@@ -69,9 +69,9 @@ public interface EventoBitacoraMapper {
                    eb.ref_detalle as detalle,
                    eb.stp_ocurrencia as stp_ocurrencia,
                    eb.stp_alta as stp_alta
-              from trazabilidad.evento_bitacora eb
-              join catalogo.evento e on e.id_evento = eb.id_evento
-              join trazabilidad.transaccion t on t.id_transaccion = eb.id_transaccion
+              from trazabilidad.edit_evento_bitacora eb
+              join catalogo.edic_evento e on e.id_evento = eb.id_evento
+              join trazabilidad.edit_transaccion t on t.id_transaccion = eb.id_transaccion
              where eb.ind_activo = true
                and eb.id_transaccion = #{idTransaccion}
               <if test="cveTransaccion != null and cveTransaccion != ''">

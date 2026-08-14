@@ -145,16 +145,16 @@ Nota: NSS y folio pueden resolverse mediante joins con tablas funcionales cuando
 
 Tablas principales:
 
-- `catalogo.evento`
-- `catalogo.mensaje`
-- `trazabilidad.evento_bitacora`
-- `trazabilidad.transaccion`
+- `catalogo.edic_evento`
+- `catalogo.edic_mensaje`
+- `trazabilidad.edit_evento_bitacora`
+- `trazabilidad.edit_transaccion`
 
-`cveEvento` se resuelve contra `catalogo.evento.cve_evento` para obtener `id_evento`. Los consumidores no deben depender del identificador numerico del catalogo.
+`cveEvento` se resuelve contra `catalogo.edic_evento.cve_evento` para obtener `id_evento`. Los consumidores no deben depender del identificador numerico del catalogo.
 
-`codigoMensaje` se valida contra `catalogo.mensaje.cve_mensaje` y se conserva dentro de `ref_detalle`, porque `trazabilidad.evento_bitacora` no tiene una relacion directa con el catalogo de mensajes.
+`codigoMensaje` se valida contra `catalogo.edic_mensaje.cve_mensaje` y se conserva dentro de `ref_detalle`, porque `trazabilidad.edit_evento_bitacora` no tiene una relacion directa con el catalogo de mensajes.
 
-Campos clave en `trazabilidad.evento_bitacora`:
+Campos clave en `trazabilidad.edit_evento_bitacora`:
 
 - `id_evento_bitacora`
 - `id_evento`
@@ -175,9 +175,9 @@ Campos clave en `trazabilidad.evento_bitacora`:
 
 ## Catalogo de eventos
 
-`catalogo.evento` contiene 45 eventos para HU001-HU012. La clave de integracion es `cve_evento`; los consumidores no deben depender de `id_evento`.
+`catalogo.edic_evento` contiene 45 eventos para HU001-HU012. La clave de integracion es `cve_evento`; los consumidores no deben depender de `id_evento`.
 
-La fuente de verdad del catalogo es `catalogo.evento` en la base Postgres del servidor.
+La fuente de verdad del catalogo es `catalogo.edic_evento` en la base Postgres del servidor.
 
 Grupos de eventos:
 

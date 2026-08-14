@@ -9,7 +9,7 @@ public interface MensajeMapper {
     @Select("""
             select exists(
                 select 1
-                  from catalogo.mensaje
+                  from catalogo.edic_mensaje
                  where cve_mensaje = #{cveMensaje}
                    and ind_activo = true
             )
