@@ -1,12 +1,50 @@
+server:
+  port: ${serverPort:8081}
+  servlet:
+    context-path: ${contextPath:/msedi-bitacora}
+  forward-headers-strategy: ${forwardHeadersStrategy:framework}
+
 spring:
+  application:
+    name: ${applicationName:msedi-bitacora}
   datasource:
-    url: ${urlConexionBd}
-    username: ${userBd}
-    password: ${passwordBd}
+    driver-class-name: ${driverClassName:org.postgresql.Driver}
+    url: ${urlConexionBd:jdbc:postgresql://10.102.44.46:5432/edisdds}
+    username: ${userBd:edisdds_owner}
+    password: "${passwordBd:ZEfB-RA+N8YF}"
+    hikari:
+      initialization-fail-timeout: ${dbInitializationFailTimeout:1}
+      connection-init-sql: SET TIME ZONE '${TZ:America/Mexico_City}'
+  sql:
+    init:
+      mode: ${sqlInitMode:never}
+  jackson:
+    default-property-inclusion: ${jacksonDefaultPropertyInclusion:non_null}
+    time-zone: ${TZ:America/Mexico_City}
+
+mybatis:
+  mapper-locations: ${mybatisMapperLocations:classpath:mappers/*.xml}
+  configuration:
+    map-underscore-to-camel-case: ${mybatisMapUnderscoreToCamelCase:true}
+
+springdoc:
+  swagger-ui:
+    path: ${swaggerUiPath:/swagger-ui}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${actuatorEndpoints:health,info}
+  endpoint:
+    health:
+      probes:
+        enabled: ${healthProbesEnabled:true}
 
 edi:
+  time-zone: ${TZ:America/Mexico_City}
   seguridad:
     jwt:
-      secret-key: ${jwtSecretKey}
-      issuer: ${EDI_JWT_ISSUER:msedi-autenticacion}
-      audience: ${EDI_BITACORA_JWT_AUDIENCE:edi}
+      secret-key: ${jwtSecretKey:edi-local-jwt-secret-key-32-characters-minimum-2026}
+      issuer: ${jwtIssuer:msedi-autenticacion}
+      audience: ${jwtAudience:edi}
