@@ -15,4 +15,12 @@ public interface MensajeMapper {
             )
             """)
     boolean existeActivo(String cveMensaje);
+
+    @Select("""
+            select id_mensaje
+              from catalogo.edic_mensaje
+             where cve_mensaje = #{cveMensaje}
+               and ind_activo = true
+            """)
+    Long idActivoPorClave(String cveMensaje);
 }

@@ -11,7 +11,21 @@ public record RegistroEventoRequest(
         @NotBlank String resultado,
         @NotNull OffsetDateTime stpOcurrencia,
         String codigoMensaje,
+        String cveFolioIncapacidad,
         String objeto,
         String error,
         Map<String, Object> detalle) {
+
+    public RegistroEventoRequest(
+            String cveEvento,
+            String cveOperacion,
+            String resultado,
+            OffsetDateTime stpOcurrencia,
+            String codigoMensaje,
+            String objeto,
+            String error,
+            Map<String, Object> detalle) {
+        this(cveEvento, cveOperacion, resultado, stpOcurrencia, codigoMensaje,
+                null, objeto, error, detalle);
+    }
 }

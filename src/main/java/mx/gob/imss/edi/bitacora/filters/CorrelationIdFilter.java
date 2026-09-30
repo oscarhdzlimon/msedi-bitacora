@@ -20,6 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class CorrelationIdFilter extends OncePerRequestFilter {
 
     public static final String HEADER_NAME = "X-Correlacion-Id";
+    public static final String TRANSACTION_HEADER_NAME = "X-Transaccion-Id";
     public static final String REQUEST_ATTRIBUTE = "edi.correlationId";
     private static final String MDC_KEY = "correlacionId";
     private static final Logger LOGGER = LoggerFactory.getLogger(CorrelationIdFilter.class);
@@ -36,22 +37,48 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
         MDC.put(MDC_KEY, correlationId);
 
         long inicio = System.nanoTime();
-        LOGGER.info("Inicia solicitud {} {} correlacionId={}", request.getMethod(),
-                request.getRequestURI(), correlationId);
+        String idTransaccion = request.getHeader(TRANSACTION_HEADER_NAME);
+        String ipOrigen = ipOrigen(request);
+        String userAgent = request.getHeader("User-Agent");
+        LOGGER.info("Inicia solicitud httpMethod={} path={} query={} correlacionId={} idTransaccion={} ipOrigen={} userAgent={}",
+                request.getMethod(), request.getRequestURI(), valor(request.getQueryString()),
+                correlationId, valor(idTransaccion), ipOrigen, valor(userAgent));
         try {
             filterChain.doFilter(request, response);
         } catch (ServletException | IOException | RuntimeException exception) {
-            LOGGER.error("Excepcion en solicitud {} {} correlacionId={}", request.getMethod(),
-                    request.getRequestURI(), correlationId, exception);
+            LOGGER.error("Excepcion en solicitud httpMethod={} path={} correlacionId={} idTransaccion={} ipOrigen={} statusParcial={}",
+                    request.getMethod(), request.getRequestURI(), correlationId,
+                    valor(idTransaccion), ipOrigen, response.getStatus(), exception);
             throw exception;
         } finally {
             long duracionMs = (System.nanoTime() - inicio) / 1_000_000L;
-            if (response.getStatus() >= 400) {
-                LOGGER.warn("Solicitud con error {} {} status={} duracionMs={} correlacionId={}",
+            if (response.getStatus() >= 500) {
+                LOGGER.error("Finaliza solicitud con error httpMethod={} path={} status={} duracionMs={} correlacionId={} idTransaccion={} ipOrigen={}",
                         request.getMethod(), request.getRequestURI(), response.getStatus(),
-                        duracionMs, correlationId);
+                        duracionMs, correlationId, valor(idTransaccion), ipOrigen);
+            } else if (response.getStatus() >= 400) {
+                LOGGER.warn("Finaliza solicitud rechazada httpMethod={} path={} status={} duracionMs={} correlacionId={} idTransaccion={} ipOrigen={}",
+                        request.getMethod(), request.getRequestURI(), response.getStatus(),
+                        duracionMs, correlationId, valor(idTransaccion), ipOrigen);
+            } else {
+                LOGGER.info("Finaliza solicitud httpMethod={} path={} status={} duracionMs={} correlacionId={} idTransaccion={} ipOrigen={}",
+                        request.getMethod(), request.getRequestURI(), response.getStatus(),
+                        duracionMs, correlationId, valor(idTransaccion), ipOrigen);
             }
             MDC.remove(MDC_KEY);
         }
+    }
+
+    private String ipOrigen(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (StringUtils.hasText(forwarded)) {
+            return forwarded.split(",")[0].strip();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        return StringUtils.hasText(realIp) ? realIp.strip() : request.getRemoteAddr();
+    }
+
+    private String valor(String value) {
+        return StringUtils.hasText(value) ? value.strip() : "-";
     }
 }

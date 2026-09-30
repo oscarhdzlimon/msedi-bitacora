@@ -15,6 +15,7 @@ public record EventoConsultaResponse(
         String resultado,
         String usuario,
         String objeto,
+        String cveFolioIncapacidad,
         String error,
         JsonNode detalle,
         OffsetDateTime stpOcurrencia,

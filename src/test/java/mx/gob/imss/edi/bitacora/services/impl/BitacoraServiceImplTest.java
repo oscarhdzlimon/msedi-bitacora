@@ -59,7 +59,7 @@ class BitacoraServiceImplTest {
                 .thenReturn(new EventoCatalogoDto(8L, "TOKEN_EDI_GENERADO"));
         when(transaccionMapper.buscarContexto(12L))
                 .thenReturn(new TransaccionContextoDto(12L, 2L, "SIMF", "tx-1"));
-        when(mensajeMapper.existeActivo("MSG001")).thenReturn(true);
+        when(mensajeMapper.idActivoPorClave("MSG001")).thenReturn(1L);
         when(bitacoraMapper.insertar(any())).thenAnswer(invocation -> {
             EventoBitacoraRegistro registro = invocation.getArgument(0);
             registro.setIdEventoBitacora(99L);
@@ -79,9 +79,35 @@ class BitacoraServiceImplTest {
         assertThat(registro.getCveOperacion()).isEqualTo("proceso");
         assertThat(registro.getRefNombreUsuario()).isEqualTo("usr-1");
         assertThat(registro.getRefSesion()).isEqualTo("jti-1");
+        assertThat(registro.getIdMensaje()).isEqualTo(1L);
         assertThat(registro.getRefDetalle())
                 .contains("MSG001", "*******8901", "[REDACTADO]")
                 .doesNotContain("12345678901", "secreto");
+    }
+
+    @Test
+    void registraIdMensajeCuandoCodigoVieneEnDetalle() {
+        when(securityContextService.validarTransaccion(12L)).thenReturn(principal);
+        when(eventoMapper.buscarActivoPorClave("VALIDACION_DIAS"))
+                .thenReturn(new EventoCatalogoDto(9L, "VALIDACION_DIAS"));
+        when(transaccionMapper.buscarContexto(12L))
+                .thenReturn(new TransaccionContextoDto(12L, 2L, "SIMF", "tx-1"));
+        when(mensajeMapper.idActivoPorClave("MSG026")).thenReturn(26L);
+        when(bitacoraMapper.insertar(any())).thenAnswer(invocation -> {
+            EventoBitacoraRegistro registro = invocation.getArgument(0);
+            registro.setIdEventoBitacora(100L);
+            return 1;
+        });
+        var request = new RegistroEventoRequest(
+                "VALIDACION_DIAS", "PROCESO", "RECHAZADA", OffsetDateTime.now(),
+                null, "INCAPACIDAD", null, Map.of("codigoMensaje", "msg026"));
+
+        service.registrar(12L, request, "127.0.0.1");
+
+        ArgumentCaptor<EventoBitacoraRegistro> captor = ArgumentCaptor.forClass(EventoBitacoraRegistro.class);
+        verify(bitacoraMapper).insertar(captor.capture());
+        assertThat(captor.getValue().getIdMensaje()).isEqualTo(26L);
+        assertThat(captor.getValue().getRefDetalle()).contains("MSG026");
     }
 
     @Test
@@ -129,7 +155,7 @@ class BitacoraServiceImplTest {
 
     private EventoConsultaDto evento(Long id, OffsetDateTime ocurrencia, String detalle) {
         return new EventoConsultaDto(id, 12L, "tx-1", "TOKEN_EDI_GENERADO", "Token generado",
-                "proceso", "EXITOSA", "usr-1", "ACCESO_EDI", null, detalle,
+                "proceso", "EXITOSA", "usr-1", "ACCESO_EDI", null, null, detalle,
                 ocurrencia, ocurrencia.plusSeconds(1));
     }
 }

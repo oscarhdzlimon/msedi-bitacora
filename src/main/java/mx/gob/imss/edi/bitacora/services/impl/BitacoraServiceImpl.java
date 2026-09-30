@@ -79,8 +79,12 @@ public class BitacoraServiceImpl implements BitacoraService {
                     "El sistema origen no corresponde con la transaccion");
         }
 
-        String codigoMensaje = normalizarOpcional(request.codigoMensaje());
-        if (codigoMensaje != null && !mensajeMapper.existeActivo(codigoMensaje)) {
+        String codigoMensaje = codigoMensaje(request);
+        Long idMensaje = null;
+        if (codigoMensaje != null) {
+            idMensaje = mensajeMapper.idActivoPorClave(codigoMensaje);
+        }
+        if (codigoMensaje != null && idMensaje == null) {
             throw new EdiException(HttpStatus.BAD_REQUEST, "MENSAJE_NO_SOPORTADO",
                     "La clave de mensaje no existe o no se encuentra activa");
         }
@@ -89,7 +93,8 @@ public class BitacoraServiceImpl implements BitacoraService {
                         "La operacion de bitacora no esta soportada"));
 
         EventoBitacoraRegistro registro = crearRegistro(
-                idTransaccion, request, terminal, principal, transaccion, evento, codigoMensaje, operacion);
+                idTransaccion, request, terminal, principal, transaccion, evento,
+                idMensaje, codigoMensaje, operacion);
         if (bitacoraMapper.insertar(registro) != 1 || registro.getIdEventoBitacora() == null) {
             throw new EdiException(HttpStatus.INTERNAL_SERVER_ERROR, "EVENTO_NO_REGISTRADO",
                     "No fue posible confirmar el registro del evento");
@@ -113,9 +118,9 @@ public class BitacoraServiceImpl implements BitacoraService {
                 ? principal.idTransaccion() : filtros.idTransaccion();
         securityContextService.validarTransaccion(idTransaccion);
         validarExistenciaTransaccion(idTransaccion);
-        if (StringUtils.hasText(filtros.nss()) || StringUtils.hasText(filtros.folioIncapacidad())) {
+        if (StringUtils.hasText(filtros.nss())) {
             throw new EdiException(HttpStatus.BAD_REQUEST, "FILTRO_FUNCIONAL_NO_DISPONIBLE",
-                    "Los filtros NSS y folio estaran disponibles cuando exista la incapacidad persistida");
+                    "El filtro NSS estara disponible cuando exista la incapacidad persistida");
         }
         if (filtros.fechaInicio() != null && filtros.fechaFin() != null
                 && filtros.fechaInicio().isAfter(filtros.fechaFin())) {
@@ -124,6 +129,7 @@ public class BitacoraServiceImpl implements BitacoraService {
         }
         return mapear(bitacoraMapper.consultar(
                 idTransaccion, filtros.cveTransaccion(), filtros.cveUsuario(),
+                normalizarOpcional(filtros.folioIncapacidad()),
                 filtros.fechaInicio(), filtros.fechaFin(), filtros.cveEvento(), filtros.resultado()));
     }
 
@@ -134,10 +140,12 @@ public class BitacoraServiceImpl implements BitacoraService {
             JwtPrincipal principal,
             TransaccionContextoDto transaccion,
             EventoCatalogoDto evento,
+            Long idMensaje,
             String codigoMensaje,
             String operacion) {
         EventoBitacoraRegistro registro = new EventoBitacoraRegistro();
         registro.setIdEvento(evento.idEvento());
+        registro.setIdMensaje(idMensaje);
         registro.setIdTransaccion(idTransaccion);
         registro.setIdSistemaOrigen(transaccion.idSistemaOrigen());
         registro.setRefNombreUsuario(principal.user());
@@ -146,6 +154,7 @@ public class BitacoraServiceImpl implements BitacoraService {
         registro.setRefSesion(principal.jti());
         registro.setRefTerminal(terminal);
         registro.setRefObjeto(request.objeto());
+        registro.setCveFolioIncapacidad(normalizarOpcional(request.cveFolioIncapacidad()));
         registro.setCveOperacion(operacion);
         registro.setRefResultado(request.resultado());
         registro.setStpOcurrencia(request.stpOcurrencia());
@@ -181,7 +190,8 @@ public class BitacoraServiceImpl implements BitacoraService {
         return eventos.stream().map(evento -> new EventoConsultaResponse(
                 evento.idEventoBitacora(), evento.idTransaccion(), evento.cveTransaccion(),
                 evento.cveEvento(), evento.descripcionEvento(), evento.cveOperacion(), evento.resultado(),
-                evento.usuario(), evento.objeto(), evento.error(), leerDetalle(evento.detalle()),
+                evento.usuario(), evento.objeto(), evento.cveFolioIncapacidad(),
+                evento.error(), leerDetalle(evento.detalle()),
                 evento.stpOcurrencia(), evento.stpAlta())).toList();
     }
 
@@ -205,5 +215,33 @@ public class BitacoraServiceImpl implements BitacoraService {
 
     private String normalizarOpcional(String value) {
         return StringUtils.hasText(value) ? value.strip().toUpperCase(Locale.ROOT) : null;
+    }
+
+    private String codigoMensaje(RegistroEventoRequest request) {
+        String codigoMensaje = normalizarOpcional(request.codigoMensaje());
+        if (codigoMensaje != null) {
+            return codigoMensaje;
+        }
+        Map<String, Object> detalle = request.detalle();
+        if (detalle == null || detalle.isEmpty()) {
+            return null;
+        }
+        codigoMensaje = normalizarOpcional(valorTexto(detalle.get("codigoMensaje")));
+        if (codigoMensaje != null) {
+            return codigoMensaje;
+        }
+        codigoMensaje = normalizarOpcional(valorTexto(detalle.get("cveMensaje")));
+        if (codigoMensaje != null) {
+            return codigoMensaje;
+        }
+        Object mensaje = detalle.get("mensaje");
+        if (mensaje instanceof Map<?, ?> mensajeMap) {
+            return normalizarOpcional(valorTexto(mensajeMap.get("codigo")));
+        }
+        return null;
+    }
+
+    private String valorTexto(Object value) {
+        return value == null ? null : value.toString();
     }
 }

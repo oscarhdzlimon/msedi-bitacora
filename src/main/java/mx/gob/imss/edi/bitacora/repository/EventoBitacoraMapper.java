@@ -15,14 +15,14 @@ public interface EventoBitacoraMapper {
 
     @Insert("""
             insert into trazabilidad.edit_evento_bitacora (
-                id_evento, id_transaccion, id_sistema_origen,
+                id_evento, id_mensaje, id_transaccion, id_sistema_origen,
                 ref_nombre_usuario, ref_error, ref_detalle, ref_sesion,
-                ref_terminal, ref_objeto, cve_operacion, ref_resultado,
+                ref_terminal, ref_objeto, cve_folio_incapacidad, cve_operacion, ref_resultado,
                 stp_ocurrencia, ind_activo, stp_alta, cve_usuario_alta
             ) values (
-                #{idEvento}, #{idTransaccion}, #{idSistemaOrigen},
+                #{idEvento}, #{idMensaje}, #{idTransaccion}, #{idSistemaOrigen},
                 #{refNombreUsuario}, #{refError}, #{refDetalle}, #{refSesion},
-                #{refTerminal}, #{refObjeto}, #{cveOperacion}, #{refResultado},
+                #{refTerminal}, #{refObjeto}, #{cveFolioIncapacidad}, #{cveOperacion}, #{refResultado},
                 #{stpOcurrencia}, true, current_timestamp, #{cveUsuarioAlta}
             )
             """)
@@ -40,6 +40,7 @@ public interface EventoBitacoraMapper {
                    eb.ref_resultado as resultado,
                    eb.ref_nombre_usuario as usuario,
                    eb.ref_objeto as objeto,
+                   eb.cve_folio_incapacidad as cve_folio_incapacidad,
                    eb.ref_error as error,
                    eb.ref_detalle as detalle,
                    eb.stp_ocurrencia as stp_ocurrencia,
@@ -65,6 +66,7 @@ public interface EventoBitacoraMapper {
                    eb.ref_resultado as resultado,
                    eb.ref_nombre_usuario as usuario,
                    eb.ref_objeto as objeto,
+                   eb.cve_folio_incapacidad as cve_folio_incapacidad,
                    eb.ref_error as error,
                    eb.ref_detalle as detalle,
                    eb.stp_ocurrencia as stp_ocurrencia,
@@ -79,6 +81,9 @@ public interface EventoBitacoraMapper {
               </if>
               <if test="cveUsuario != null and cveUsuario != ''">
                 and eb.ref_nombre_usuario = #{cveUsuario}
+              </if>
+              <if test="folioIncapacidad != null and folioIncapacidad != ''">
+                and eb.cve_folio_incapacidad = #{folioIncapacidad}
               </if>
               <if test="fechaInicio != null">
                 and eb.stp_ocurrencia &gt;= #{fechaInicio}
@@ -99,6 +104,7 @@ public interface EventoBitacoraMapper {
             @Param("idTransaccion") Long idTransaccion,
             @Param("cveTransaccion") String cveTransaccion,
             @Param("cveUsuario") String cveUsuario,
+            @Param("folioIncapacidad") String folioIncapacidad,
             @Param("fechaInicio") OffsetDateTime fechaInicio,
             @Param("fechaFin") OffsetDateTime fechaFin,
             @Param("cveEvento") String cveEvento,

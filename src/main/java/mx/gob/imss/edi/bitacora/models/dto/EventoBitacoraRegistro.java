@@ -6,6 +6,7 @@ public class EventoBitacoraRegistro {
 
     private Long idEventoBitacora;
     private Long idEvento;
+    private Long idMensaje;
     private Long idTransaccion;
     private Long idSistemaOrigen;
     private String refNombreUsuario;
@@ -14,6 +15,7 @@ public class EventoBitacoraRegistro {
     private String refSesion;
     private String refTerminal;
     private String refObjeto;
+    private String cveFolioIncapacidad;
     private String cveOperacion;
     private String refResultado;
     private OffsetDateTime stpOcurrencia;
@@ -23,6 +25,8 @@ public class EventoBitacoraRegistro {
     public void setIdEventoBitacora(Long value) { this.idEventoBitacora = value; }
     public Long getIdEvento() { return idEvento; }
     public void setIdEvento(Long value) { this.idEvento = value; }
+    public Long getIdMensaje() { return idMensaje; }
+    public void setIdMensaje(Long value) { this.idMensaje = value; }
     public Long getIdTransaccion() { return idTransaccion; }
     public void setIdTransaccion(Long value) { this.idTransaccion = value; }
     public Long getIdSistemaOrigen() { return idSistemaOrigen; }
@@ -39,6 +43,8 @@ public class EventoBitacoraRegistro {
     public void setRefTerminal(String value) { this.refTerminal = value; }
     public String getRefObjeto() { return refObjeto; }
     public void setRefObjeto(String value) { this.refObjeto = value; }
+    public String getCveFolioIncapacidad() { return cveFolioIncapacidad; }
+    public void setCveFolioIncapacidad(String value) { this.cveFolioIncapacidad = value; }
     public String getCveOperacion() { return cveOperacion; }
     public void setCveOperacion(String value) { this.cveOperacion = value; }
     public String getRefResultado() { return refResultado; }

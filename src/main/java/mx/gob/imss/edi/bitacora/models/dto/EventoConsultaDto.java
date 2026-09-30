@@ -12,6 +12,7 @@ public record EventoConsultaDto(
         String resultado,
         String usuario,
         String objeto,
+        String cveFolioIncapacidad,
         String error,
         String detalle,
         OffsetDateTime stpOcurrencia,
