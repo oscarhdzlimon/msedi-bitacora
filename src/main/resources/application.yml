@@ -11,9 +11,17 @@ spring:
     driver-class-name: ${driverClassName:org.postgresql.Driver}
     url: ${urlConexionBd:jdbc:postgresql://10.102.44.46:5432/edisdds}
     username: ${userBd:edisdds_owner}
-    password: "${passwordBd:ZEfB-RA+N8YF}"
+    password: ${passBd:ZEfB-RA+N8YF}
     hikari:
+      pool-name: ${dbPoolName:msedi-bitacora-hikari}
       initialization-fail-timeout: ${dbInitializationFailTimeout:1}
+      maximum-pool-size: ${dbMaximumPoolSize:5}
+      minimum-idle: ${dbMinimumIdle:1}
+      connection-timeout: ${dbConnectionTimeoutMs:30000}
+      validation-timeout: ${dbValidationTimeoutMs:5000}
+      idle-timeout: ${dbIdleTimeoutMs:60000}
+      max-lifetime: ${dbMaxLifetimeMs:1800000}
+      leak-detection-threshold: ${dbLeakDetectionThresholdMs:0}
       connection-init-sql: SET TIME ZONE '${TZ:America/Mexico_City}'
   sql:
     init:
@@ -45,6 +53,6 @@ edi:
   time-zone: ${TZ:America/Mexico_City}
   seguridad:
     jwt:
-      secret-key: ${jwtSecretKey:edi-local-jwt-secret-key-32-characters-minimum-2026}
+      secret-key: ${jwtSecretKey:3RFIP4LaViGIAUEVgg4myThYZFyokJ/MLttsTbQeyt2lgaISD9O4v2IIqz3XrR8t2Eq9EW+stAXD1pIUI3Imvg==}
       issuer: ${jwtIssuer:msedi-autenticacion}
       audience: ${jwtAudience:edi}

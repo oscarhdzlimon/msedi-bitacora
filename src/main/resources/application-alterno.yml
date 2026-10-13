@@ -1,0 +1,18 @@
+# Perfil local alterno. Activar con spring.profiles.active=alterno.
+# Las contraseñas se suministran mediante variables de entorno.
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: ${EDI_ALT_POSTGRES_URL:jdbc:postgresql://10.166.0.120:5434/edisdds}
+    username: ${EDI_ALT_POSTGRES_USER:edisdds_user}
+    password: ${EDI_ALT_POSTGRES_PASSWORD:edisdds2026}
+  sql:
+    init:
+      mode: never
+
+edi:
+  seguridad:
+    jwt:
+      secret-key: ${EDI_LOCAL_JWT_SECRET:edi-local-jwt-secret-key-32-characters-minimum-2026}
