@@ -4,6 +4,10 @@ import java.time.OffsetDateTime;
 
 public class EventoBitacoraRegistro {
 
+    private Long idTransaccionActor;
+    private String cveUsuario;
+    private String refPerfilUsuario;
+    private String refClaveDeduplicacion;
     private Long idEventoBitacora;
     private Long idEvento;
     private Long idMensaje;
@@ -21,6 +25,14 @@ public class EventoBitacoraRegistro {
     private OffsetDateTime stpOcurrencia;
     private String cveUsuarioAlta;
 
+    public Long getIdTransaccionActor() { return idTransaccionActor; }
+    public void setIdTransaccionActor(Long v) { idTransaccionActor = v; }
+    public String getCveUsuario() { return cveUsuario; }
+    public void setCveUsuario(String v) { cveUsuario = v; }
+    public String getRefPerfilUsuario() { return refPerfilUsuario; }
+    public void setRefPerfilUsuario(String v) { refPerfilUsuario = v; }
+    public String getRefClaveDeduplicacion() { return refClaveDeduplicacion; }
+    public void setRefClaveDeduplicacion(String v) { refClaveDeduplicacion = v; }
     public Long getIdEventoBitacora() { return idEventoBitacora; }
     public void setIdEventoBitacora(Long value) { this.idEventoBitacora = value; }
     public Long getIdEvento() { return idEvento; }

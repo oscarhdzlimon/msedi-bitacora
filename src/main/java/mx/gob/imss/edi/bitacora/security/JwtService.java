@@ -26,7 +26,10 @@ public class JwtService {
         return new JwtPrincipal(
                 claims.getSubject(), claims.getId(), asLong(claims.get("idTransaccion")),
                 claims.get("cveTransaccion", String.class), claims.get("sistemaOrigen", String.class),
-                claims.get("user", String.class));
+                claims.get("user", String.class), claims.get("tokenType", String.class),
+                claims.get("perfil", String.class), claims.get("cveOoad", String.class),
+                claims.get("cveUnidad", String.class), claims.get("matricula", String.class),
+                claims.get("scope", String.class), claims.get("sesionActor", String.class));
     }
 
     private SecretKey signingKey() {

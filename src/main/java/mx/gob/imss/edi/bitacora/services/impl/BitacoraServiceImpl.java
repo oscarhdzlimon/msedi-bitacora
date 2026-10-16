@@ -79,6 +79,13 @@ public class BitacoraServiceImpl implements BitacoraService {
                     "El sistema origen no corresponde con la transaccion");
         }
 
+        Long transaccionNegocio = transaccionAutorizacion(cveEvento, request, principal);
+        if (transaccionNegocio != null && !transaccionNegocio.equals(idTransaccion)) {
+            transaccion = transaccionMapper.buscarContexto(transaccionNegocio);
+            if (transaccion == null) throw new EdiException(HttpStatus.NOT_FOUND,
+                    "TRANSACCION_NO_ENCONTRADA", "La transaccion original no existe");
+        }
+
         String codigoMensaje = codigoMensaje(request);
         Long idMensaje = null;
         if (codigoMensaje != null) {
@@ -93,9 +100,25 @@ public class BitacoraServiceImpl implements BitacoraService {
                         "La operacion de bitacora no esta soportada"));
 
         EventoBitacoraRegistro registro = crearRegistro(
-                idTransaccion, request, terminal, principal, transaccion, evento,
+                transaccion.idTransaccion(), request, terminal, principal, transaccion, evento,
                 idMensaje, codigoMensaje, operacion);
-        if (bitacoraMapper.insertar(registro) != 1 || registro.getIdEventoBitacora() == null) {
+        registro.setRefClaveDeduplicacion(claveResumen(cveEvento, request));
+        if (registro.getRefClaveDeduplicacion() != null) {
+            // Serializar solo este resumen/etapa. Permite A -> B -> A, sin repetir A -> A.
+            bitacoraMapper.bloquearResumen(registro);
+            var anterior = bitacoraMapper.ultimoResumen(registro);
+            String huella = registro.getRefClaveDeduplicacion();
+            if (anterior != null && anterior.refClaveDeduplicacion().startsWith(huella + ":")) {
+                return new RegistroEventoResponse(anterior.idEventoBitacora());
+            }
+            registro.setRefClaveDeduplicacion(huella + ":" + (anterior == null ? 0 : anterior.idEventoBitacora()));
+        }
+        int insertados = bitacoraMapper.insertar(registro);
+        if (insertados == 0 && registro.getRefClaveDeduplicacion() != null) {
+            Long existente = bitacoraMapper.buscarDuplicado(registro);
+            if (existente != null) return new RegistroEventoResponse(existente);
+        }
+        if (insertados != 1 || registro.getIdEventoBitacora() == null) {
             throw new EdiException(HttpStatus.INTERNAL_SERVER_ERROR, "EVENTO_NO_REGISTRADO",
                     "No fue posible confirmar el registro del evento");
         }
@@ -148,10 +171,11 @@ public class BitacoraServiceImpl implements BitacoraService {
         registro.setIdMensaje(idMensaje);
         registro.setIdTransaccion(idTransaccion);
         registro.setIdSistemaOrigen(transaccion.idSistemaOrigen());
-        registro.setRefNombreUsuario(principal.user());
+        registro.setIdTransaccionActor(principal.idTransaccion());
+        completarActor(registro, principal);
         registro.setRefError(datosSensiblesService.sanitizarTexto(request.error()));
         registro.setRefDetalle(serializarDetalle(codigoMensaje, request.detalle()));
-        registro.setRefSesion(principal.jti());
+        registro.setRefSesion(servicioAuditoria(principal) ? principal.sesionActor() : principal.jti());
         registro.setRefTerminal(terminal);
         registro.setRefObjeto(request.objeto());
         registro.setCveFolioIncapacidad(normalizarOpcional(request.cveFolioIncapacidad()));
@@ -161,6 +185,81 @@ public class BitacoraServiceImpl implements BitacoraService {
         registro.setCveUsuarioAlta(StringUtils.hasText(principal.user())
                 ? principal.user() : "SERVICIO:" + principal.subject());
         return registro;
+    }
+
+    private static final java.util.Set<String> EVENTOS_AUTORIZACION = java.util.Set.of(
+            "AUTORIZACION_APROBADA", "AUTORIZACION_NO_AUTORIZADA",
+            "CERTIFICADO_AUTORIZACION_GENERADO", "CERTIFICADO_AUTORIZACION_ERROR",
+            "DOCUMENTO_AUTORIZACION_CORREO_ENVIADO", "DOCUMENTO_AUTORIZACION_CORREO_ERROR");
+
+    private boolean servicioAuditoria(JwtPrincipal actor) {
+        return "msedi-expedicion".equals(actor.subject()) && "SERVICIO_BITACORA".equals(actor.tokenType())
+                && "edi:bitacora:autorizacion".equals(actor.scope())
+                && StringUtils.hasText(actor.sesionActor()) && StringUtils.hasText(actor.matricula());
+    }
+
+    private Long transaccionAutorizacion(String evento, RegistroEventoRequest request, JwtPrincipal actor) {
+        if (!EVENTOS_AUTORIZACION.contains(evento)) return null;
+        if (!servicioAuditoria(actor)
+                || !"PERFIL_DPM_AUTORIZADOR".equalsIgnoreCase(actor.perfil())) {
+            throw new EdiException(HttpStatus.FORBIDDEN, "PERFIL_NO_AUTORIZADO",
+                    "Se requiere publicacion interna de Expedicion con identidad del autorizador");
+        }
+        Long autorizacion = identificador(request.detalle(), "idAutorizacion");
+        Long incapacidad = identificador(request.detalle(), "idIncapacidad");
+        var contexto = autorizacion == null ? null : transaccionMapper.buscarAutorizacion(autorizacion);
+        if (contexto == null || !java.util.Objects.equals(contexto.idIncapacidad(), incapacidad)
+                || !StringUtils.hasText(actor.cveOoad()) || !StringUtils.hasText(actor.cveUnidad())
+                || !actor.cveOoad().equals(contexto.cveOoad())
+                || !actor.cveUnidad().equals(contexto.cveUnidad())
+                || (StringUtils.hasText(request.cveFolioIncapacidad())
+                    && !request.cveFolioIncapacidad().equals(contexto.folioIncapacidad()))) {
+            throw new EdiException(HttpStatus.FORBIDDEN, "AUTORIZACION_TRAZA_NO_PERMITIDA",
+                    "La autorizacion no corresponde a la incapacidad o al alcance del medico");
+        }
+        return contexto.idTransaccion();
+    }
+
+    private Long identificador(Map<String, Object> detalle, String campo) {
+        Object valor = detalle == null ? null : detalle.get(campo);
+        try {
+            Long id = valor == null ? null : Long.valueOf(valor.toString());
+            return id != null && id > 0 ? id : null;
+        } catch (NumberFormatException ex) { return null; }
+    }
+
+    private void completarActor(EventoBitacoraRegistro registro, JwtPrincipal actor) {
+        registro.setCveUsuario(StringUtils.hasText(actor.user()) ? actor.user() : "SERVICIO:" + actor.subject());
+        // Los claims firmados identifican al medico. El nombre se toma del acceso ya consumido,
+        // nunca del detalle del evento ni del payload de la incapacidad original.
+        if ((!"SESION_EDI".equals(actor.tokenType()) && !servicioAuditoria(actor))
+                || !StringUtils.hasText(actor.matricula())) return;
+        registro.setCveUsuario(actor.matricula());
+        registro.setRefPerfilUsuario(actor.perfil());
+        String payload = transaccionMapper.buscarPayloadActor(actor.idTransaccion());
+        if (!StringUtils.hasText(payload)) return;
+        try {
+            JsonNode medico = objectMapper.readTree(payload).path("medico");
+            if (!actor.matricula().equals(medico.path("matricula").asText())
+                    || !java.util.Objects.equals(actor.perfil(), medico.path("perfil").asText(null))) return;
+            String nombre = medico.path("nombreCompleto").asText("").strip();
+            if (nombre.isEmpty()) nombre = java.util.stream.Stream.of("nombres", "apellidoPaterno", "apellidoMaterno")
+                    .map(c -> medico.path(c).asText("").strip()).filter(v -> !v.isEmpty())
+                    .collect(java.util.stream.Collectors.joining(" "));
+            registro.setRefNombreUsuario(nombre.isEmpty() ? null : nombre.substring(0, Math.min(nombre.length(), 150)));
+        } catch (JsonProcessingException ex) {
+            // Conservar matricula/perfil firmados aunque un acceso historico tenga JSON invalido.
+        }
+    }
+
+    private String claveResumen(String evento, RegistroEventoRequest request) {
+        if (!java.util.Set.of("NSSA_ANTECEDENTES_CONSULTADOS", "SIST_DICTAMENES_CONSULTADOS").contains(evento)
+                || !"EXITOSA".equals(request.resultado()) || request.detalle() == null) return null;
+        Object etapa = request.detalle().get("etapa");
+        Object huella = request.detalle().get("huellaResultado");
+        if (!(etapa instanceof String fase) || !java.util.Set.of("CAPTURA", "REGISTRO").contains(fase)
+                || !(huella instanceof String hash) || !hash.matches("[a-f0-9]{64}")) return null;
+        return fase + ":" + hash;
     }
 
     private String serializarDetalle(String codigoMensaje, Map<String, Object> detalle) {
@@ -179,7 +278,7 @@ public class BitacoraServiceImpl implements BitacoraService {
             return objectMapper.writeValueAsString(contenido);
         } catch (JsonProcessingException exception) {
             throw new EdiException(HttpStatus.BAD_REQUEST, "DETALLE_INVALIDO",
-                    "El detalle del evento no se puede serializar");
+                    "El detalle del evento no se puede serializar", exception);
         }
     }
 
@@ -192,7 +291,8 @@ public class BitacoraServiceImpl implements BitacoraService {
                 evento.cveEvento(), evento.descripcionEvento(), evento.cveOperacion(), evento.resultado(),
                 evento.usuario(), evento.objeto(), evento.cveFolioIncapacidad(),
                 evento.error(), leerDetalle(evento.detalle()),
-                evento.stpOcurrencia(), evento.stpAlta())).toList();
+                evento.stpOcurrencia(), evento.stpAlta(), evento.idTransaccionActor(),
+                evento.perfilUsuario(), evento.nombreUsuario())).toList();
     }
 
     private JsonNode leerDetalle(String detalle) {

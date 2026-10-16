@@ -1,0 +1,63 @@
+server:
+  port: 8081
+  servlet:
+    context-path: "/msedi-bitacora"
+  forward-headers-strategy: "framework"
+
+spring:
+  application:
+    name: "msedi-bitacora"
+  datasource:
+    driver-class-name: "org.postgresql.Driver"
+    url: ${urlConexionBd:jdbc:postgresql://10.102.44.46:5432/edisdds}
+    username: ${userBd:edisdds_owner}
+    password: ${passBd:ZEfB-RA+N8YF}
+    hikari:
+      pool-name: "msedi-bitacora-hikari"
+      initialization-fail-timeout: 1
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 30000
+      validation-timeout: 5000
+      idle-timeout: 60000
+      max-lifetime: 1800000
+      leak-detection-threshold: 0
+      connection-init-sql: SET TIME ZONE '${TZ:America/Mexico_City}'
+  sql:
+    init:
+      mode: "never"
+  jackson:
+    default-property-inclusion: "non_null"
+    time-zone: ${TZ:America/Mexico_City}
+
+mybatis:
+  mapper-locations: "classpath:mappers/*.xml"
+  configuration:
+    map-underscore-to-camel-case: true
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: "/swagger-ui"
+
+management:
+  endpoints:
+    web:
+      discovery:
+        enabled: true
+      exposure:
+        include: "health,info"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+edi:
+  time-zone: ${TZ:America/Mexico_City}
+  seguridad:
+    jwt:
+      secret-key: ${jwtSecretKey:3RFIP4LaViGIAUEVgg4myThYZFyokJ/MLttsTbQeyt2lgaISD9O4v2IIqz3XrR8t2Eq9EW+stAXD1pIUI3Imvg==}
+      issuer: "msedi-autenticacion"
+      audience: "edi"

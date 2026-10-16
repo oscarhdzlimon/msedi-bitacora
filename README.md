@@ -56,3 +56,10 @@ PostgreSQL con \`America/Mexico_City\`. En OpenShift tambien se recomienda
 \`TZ=America/Mexico_City\` para que el proceso tenga la zona correcta desde su
 arranque.
 
+
+### Trazabilidad de incapacidad (2026-10-15)
+
+El ajuste de identidad, resumenes NSSA/SIST y eventos de autorizacion requiere
+`config/sql/20261015_trazabilidad_ciclo_incapacidad.sql` antes del despliegue.
+Ver `documentacion/Cambios_trazabilidad_incapacidad_20261015.md` en la raiz EDI
+para el detalle, el orden de despliegue y los casos de verificacion.

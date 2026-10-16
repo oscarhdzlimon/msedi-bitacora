@@ -19,5 +19,8 @@ public record EventoConsultaResponse(
         String error,
         JsonNode detalle,
         OffsetDateTime stpOcurrencia,
-        OffsetDateTime stpAlta) {
+        OffsetDateTime stpAlta,
+        Long idTransaccionActor,
+        String perfilUsuario,
+        String nombreUsuario) {
 }

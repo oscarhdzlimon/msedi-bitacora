@@ -77,7 +77,8 @@ class BitacoraServiceImplTest {
         verify(bitacoraMapper).insertar(captor.capture());
         EventoBitacoraRegistro registro = captor.getValue();
         assertThat(registro.getCveOperacion()).isEqualTo("proceso");
-        assertThat(registro.getRefNombreUsuario()).isEqualTo("usr-1");
+        assertThat(registro.getCveUsuario()).isEqualTo("usr-1");
+        assertThat(registro.getRefNombreUsuario()).isNull();
         assertThat(registro.getRefSesion()).isEqualTo("jti-1");
         assertThat(registro.getIdMensaje()).isEqualTo(1L);
         assertThat(registro.getRefDetalle())

@@ -8,7 +8,11 @@ public class EdiException extends RuntimeException {
     private final String codigo;
 
     public EdiException(HttpStatus status, String codigo, String mensaje) {
-        super(mensaje);
+        this(status, codigo, mensaje, null);
+    }
+
+    public EdiException(HttpStatus status, String codigo, String mensaje, Throwable causa) {
+        super(mensaje, causa);
         this.status = status;
         this.codigo = codigo;
     }
