@@ -192,6 +192,10 @@ public class BitacoraServiceImpl implements BitacoraService {
             "CERTIFICADO_AUTORIZACION_GENERADO", "CERTIFICADO_AUTORIZACION_ERROR",
             "DOCUMENTO_AUTORIZACION_CORREO_ENVIADO", "DOCUMENTO_AUTORIZACION_CORREO_ERROR");
 
+    private static final java.util.Set<String> EVENTOS_ST7 = java.util.Set.of(
+            "ST7_ENVIO_INICIADO", "ST7_ENVIO_EXITOSO", "ST7_ENVIO_ERROR_REINTENTABLE", "ST7_ENVIO_NO_REINTENTABLE",
+            "ST7_REINTENTO_SOLICITADO", "ST7_REINTENTO_EXITOSO", "ST7_REINTENTO_ERROR");
+
     private boolean servicioAuditoria(JwtPrincipal actor) {
         return "msedi-expedicion".equals(actor.subject()) && "SERVICIO_BITACORA".equals(actor.tokenType())
                 && "edi:bitacora:autorizacion".equals(actor.scope())
@@ -199,7 +203,8 @@ public class BitacoraServiceImpl implements BitacoraService {
     }
 
     private Long transaccionAutorizacion(String evento, RegistroEventoRequest request, JwtPrincipal actor) {
-        if (!EVENTOS_AUTORIZACION.contains(evento)) return null;
+        if (!EVENTOS_AUTORIZACION.contains(evento)
+                && !(EVENTOS_ST7.contains(evento) && servicioAuditoria(actor))) return null;
         if (!servicioAuditoria(actor)
                 || !"PERFIL_DPM_AUTORIZADOR".equalsIgnoreCase(actor.perfil())) {
             throw new EdiException(HttpStatus.FORBIDDEN, "PERFIL_NO_AUTORIZADO",

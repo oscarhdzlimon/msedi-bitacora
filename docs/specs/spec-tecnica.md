@@ -283,3 +283,8 @@ jwt:
 - Se admiten las operaciones `insert`, `update`, `delete`, `select`, `login`, `proceso` y `error`.
 - Password, API key, Bearer, JWT, NSS y CURP se redactan o enmascaran tanto en `detalle` como en el texto de error.
 - La API no expone endpoints de modificacion o eliminacion de eventos.
+
+
+## HU003 Eventos ST7 posteriores a la autorizacion (2026-10-23)
+
+Los eventos ST7_ENVIO_INICIADO, ST7_ENVIO_EXITOSO, ST7_ENVIO_ERROR_REINTENTABLE, ST7_ENVIO_NO_REINTENTABLE, ST7_REINTENTO_SOLICITADO, ST7_REINTENTO_EXITOSO y ST7_REINTENTO_ERROR pueden publicarse desde la sesion de un autorizador. Expedicion presenta una credencial interna con la identidad y transaccion de esa sesion, idAutorizacion e idIncapacidad. Bitacora valida perfil, OOAD y presupuesto de la unidad, resuelve la transaccion original y conserva id_transaccion_actor y ref_sesion. Una sesion ordinaria de tratante mantiene el registro ST7 sobre su propia transaccion. No hay nuevos campos ni eventos de catalogo.

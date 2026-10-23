@@ -67,6 +67,24 @@ class TrazabilidadCicloTest {
         assertThat(r.getRefNombreUsuario()).isEqualTo("MEDICO AUTORIZADOR PRUEBA");
         assertThat(r.getRefSesion()).isEqualTo("sesion-40");
     }
+    @Test void st7DesdeAutorizacionSeVinculaAlRegistroOriginalConSuActor() {
+        preparar("ST7_ENVIO_EXITOSO", actor("SERVICIO_BITACORA", "Perfil_DPM_Autorizador", "02", "PRESUP01"));
+        when(transacciones.buscarAutorizacion(8L)).thenReturn(new AutorizacionTrazaDto(39L,4L,"F4","02","PRESUP01"));
+        when(transacciones.buscarContexto(39L)).thenReturn(new TransaccionContextoDto(39L,2L,"MOCE","tx39"));
+        insercion();
+        servicio.registrar(40L,solicitud("ST7_ENVIO_EXITOSO","EXITOSO",Map.of("idAutorizacion",8L,"idIncapacidad",4L)),"local");
+        var registro=capturar();
+        assertThat(registro.getIdTransaccion()).isEqualTo(39L);
+        assertThat(registro.getIdTransaccionActor()).isEqualTo(40L);
+        assertThat(registro.getCveUsuario()).isEqualTo("00123456");
+    }
+    @Test void st7DelAutorizadorNoPuedeAsociarseAOtraIncapacidad() {
+        preparar("ST7_ENVIO_INICIADO", actor("SERVICIO_BITACORA", "Perfil_DPM_Autorizador", "02", "PRESUP01"));
+        when(transacciones.buscarAutorizacion(8L)).thenReturn(new AutorizacionTrazaDto(39L,4L,"F4","02","PRESUP01"));
+        assertThatThrownBy(()->servicio.registrar(40L,solicitud("ST7_ENVIO_INICIADO","INICIADO",
+                Map.of("idAutorizacion",8L,"idIncapacidad",99L)),"local")).isInstanceOf(EdiException.class);
+        verifyNoInteractions(registros);
+    }
     @Test void noPermiteAutorizarConPerfilTratante() {
         preparar("AUTORIZACION_APROBADA", actor("SERVICIO_BITACORA", "Perfil_DPM_Medico", "02", "UMF01"));
         assertThatThrownBy(() -> servicio.registrar(40L, solicitud("AUTORIZACION_APROBADA", "EXITOSO",
