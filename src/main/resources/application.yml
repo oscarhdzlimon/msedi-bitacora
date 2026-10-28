@@ -37,9 +37,9 @@ mybatis:
 
 springdoc:
   api-docs:
-    enabled: true
+    enabled: ${habilitarSwagger:true}
   swagger-ui:
-    enabled: true
+    enabled: ${habilitarSwagger:true}
     path: "/swagger-ui"
 
 management:

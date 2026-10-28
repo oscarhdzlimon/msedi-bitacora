@@ -297,3 +297,20 @@ Los resolutores conservan la prioridad del texto activo en PostgreSQL; el enum n
 sustituye la base ni restringe mensajes dinámicos recibidos de otros servicios.
 Las variantes DETALLE mantienen el texto específico del contexto, sin crear claves
 nuevas. Esta refactorización no cambia estados HTTP, contratos ni reglas funcionales.
+
+
+## HU003 Catálogo de validación médica, clasificación y PDF ST7 (2026-10-27)
+
+La capacidad de registro de HU003 admite los eventos `MEDICO_SIST_VALIDADO`,
+`MEDICO_SIST_VALIDACION_ERROR`, `CLASIFICACION_AUTORIZACION_SELECCIONADA`,
+`ST7_DOCUMENTO_GENERADO`, `SIST_MEDICO_VALIDADO`, `SIST_MEDICO_VALIDACION_ERROR`,
+`SIST_ST7_DATOS_CONSULTADOS` y `SIST_ST7_DATOS_CONSULTA_ERROR` cuando existen
+activos en PostgreSQL. Cubren la validación del médico para PRT, la selección
+posterior a HINC de HU035 y la consulta/generación del documento ST7 de HU029.
+No cambian el contrato REST ni las reglas de autorización de bitácora.
+
+El alta manual aditiva está en `config/sql/20261027_eventos_medico_clasificacion_documento_st7.sql`
+del workspace. No se inicializan catálogos desde el arranque del servicio.
+Se mantienen la resolución por clave, el rechazo EVENTO_NO_SOPORTADO para claves
+inexistentes/inactivas y la inmutabilidad de los eventos registrados. La reparación
+del catálogo no recrea eventos históricos rechazados ni inventa fechas de ocurrencia.
