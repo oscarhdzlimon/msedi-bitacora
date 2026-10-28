@@ -1,5 +1,7 @@
 package mx.gob.imss.edi.bitacora.services.impl;
 
+import mx.gob.imss.edi.bitacora.common.enums.MensajeEdi;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,25 +67,25 @@ public class BitacoraServiceImpl implements BitacoraService {
         String cveEvento = request.cveEvento().strip().toUpperCase(Locale.ROOT);
         EventoCatalogoDto evento = eventoMapper.buscarActivoPorClave(cveEvento);
         if (evento == null) {
-            throw new EdiException(HttpStatus.BAD_REQUEST, "EVENTO_NO_SOPORTADO",
-                    "La clave de evento no existe o no se encuentra activa");
+            throw new EdiException(HttpStatus.BAD_REQUEST, MensajeEdi.EVENTO_NO_SOPORTADO.codigo(),
+                    MensajeEdi.EVENTO_NO_SOPORTADO.textoRespaldo());
         }
 
         TransaccionContextoDto transaccion = transaccionMapper.buscarContexto(idTransaccion);
         if (transaccion == null) {
-            throw new EdiException(HttpStatus.NOT_FOUND, "TRANSACCION_NO_ENCONTRADA",
-                    "La transaccion indicada no existe");
+            throw new EdiException(HttpStatus.NOT_FOUND, MensajeEdi.TRANSACCION_NO_ENCONTRADA.codigo(),
+                    MensajeEdi.TRANSACCION_NO_ENCONTRADA.textoRespaldo());
         }
         if (!transaccion.cveSistemaOrigen().equalsIgnoreCase(principal.sistemaOrigen())) {
-            throw new EdiException(HttpStatus.FORBIDDEN, "SISTEMA_ORIGEN_NO_CORRESPONDE",
-                    "El sistema origen no corresponde con la transaccion");
+            throw new EdiException(HttpStatus.FORBIDDEN, MensajeEdi.SISTEMA_ORIGEN_NO_CORRESPONDE.codigo(),
+                    MensajeEdi.SISTEMA_ORIGEN_NO_CORRESPONDE.textoRespaldo());
         }
 
         Long transaccionNegocio = transaccionAutorizacion(cveEvento, request, principal);
         if (transaccionNegocio != null && !transaccionNegocio.equals(idTransaccion)) {
             transaccion = transaccionMapper.buscarContexto(transaccionNegocio);
             if (transaccion == null) throw new EdiException(HttpStatus.NOT_FOUND,
-                    "TRANSACCION_NO_ENCONTRADA", "La transaccion original no existe");
+                    MensajeEdi.TRANSACCION_NO_ENCONTRADA_DETALLE_2.codigo(), MensajeEdi.TRANSACCION_NO_ENCONTRADA_DETALLE_2.textoRespaldo());
         }
 
         String codigoMensaje = codigoMensaje(request);
@@ -92,12 +94,12 @@ public class BitacoraServiceImpl implements BitacoraService {
             idMensaje = mensajeMapper.idActivoPorClave(codigoMensaje);
         }
         if (codigoMensaje != null && idMensaje == null) {
-            throw new EdiException(HttpStatus.BAD_REQUEST, "MENSAJE_NO_SOPORTADO",
-                    "La clave de mensaje no existe o no se encuentra activa");
+            throw new EdiException(HttpStatus.BAD_REQUEST, MensajeEdi.MENSAJE_NO_SOPORTADO.codigo(),
+                    MensajeEdi.MENSAJE_NO_SOPORTADO.textoRespaldo());
         }
         String operacion = OperacionBitacora.normalizar(request.cveOperacion())
-                .orElseThrow(() -> new EdiException(HttpStatus.BAD_REQUEST, "OPERACION_NO_SOPORTADA",
-                        "La operacion de bitacora no esta soportada"));
+                .orElseThrow(() -> new EdiException(HttpStatus.BAD_REQUEST, MensajeEdi.OPERACION_NO_SOPORTADA.codigo(),
+                        MensajeEdi.OPERACION_NO_SOPORTADA.textoRespaldo()));
 
         EventoBitacoraRegistro registro = crearRegistro(
                 transaccion.idTransaccion(), request, terminal, principal, transaccion, evento,
@@ -119,8 +121,8 @@ public class BitacoraServiceImpl implements BitacoraService {
             if (existente != null) return new RegistroEventoResponse(existente);
         }
         if (insertados != 1 || registro.getIdEventoBitacora() == null) {
-            throw new EdiException(HttpStatus.INTERNAL_SERVER_ERROR, "EVENTO_NO_REGISTRADO",
-                    "No fue posible confirmar el registro del evento");
+            throw new EdiException(HttpStatus.INTERNAL_SERVER_ERROR, MensajeEdi.EVENTO_NO_REGISTRADO.codigo(),
+                    MensajeEdi.EVENTO_NO_REGISTRADO.textoRespaldo());
         }
         return new RegistroEventoResponse(registro.getIdEventoBitacora());
     }
@@ -142,13 +144,13 @@ public class BitacoraServiceImpl implements BitacoraService {
         securityContextService.validarTransaccion(idTransaccion);
         validarExistenciaTransaccion(idTransaccion);
         if (StringUtils.hasText(filtros.nss())) {
-            throw new EdiException(HttpStatus.BAD_REQUEST, "FILTRO_FUNCIONAL_NO_DISPONIBLE",
-                    "El filtro NSS estara disponible cuando exista la incapacidad persistida");
+            throw new EdiException(HttpStatus.BAD_REQUEST, MensajeEdi.FILTRO_FUNCIONAL_NO_DISPONIBLE.codigo(),
+                    MensajeEdi.FILTRO_FUNCIONAL_NO_DISPONIBLE.textoRespaldo());
         }
         if (filtros.fechaInicio() != null && filtros.fechaFin() != null
                 && filtros.fechaInicio().isAfter(filtros.fechaFin())) {
-            throw new EdiException(HttpStatus.BAD_REQUEST, "RANGO_FECHAS_INVALIDO",
-                    "La fecha inicial no puede ser posterior a la fecha final");
+            throw new EdiException(HttpStatus.BAD_REQUEST, MensajeEdi.RANGO_FECHAS_INVALIDO.codigo(),
+                    MensajeEdi.RANGO_FECHAS_INVALIDO.textoRespaldo());
         }
         return mapear(bitacoraMapper.consultar(
                 idTransaccion, filtros.cveTransaccion(), filtros.cveUsuario(),
@@ -207,8 +209,8 @@ public class BitacoraServiceImpl implements BitacoraService {
                 && !(EVENTOS_ST7.contains(evento) && servicioAuditoria(actor))) return null;
         if (!servicioAuditoria(actor)
                 || !"PERFIL_DPM_AUTORIZADOR".equalsIgnoreCase(actor.perfil())) {
-            throw new EdiException(HttpStatus.FORBIDDEN, "PERFIL_NO_AUTORIZADO",
-                    "Se requiere publicacion interna de Expedicion con identidad del autorizador");
+            throw new EdiException(HttpStatus.FORBIDDEN, MensajeEdi.PERFIL_NO_AUTORIZADO.codigo(),
+                    MensajeEdi.PERFIL_NO_AUTORIZADO.textoRespaldo());
         }
         Long autorizacion = identificador(request.detalle(), "idAutorizacion");
         Long incapacidad = identificador(request.detalle(), "idIncapacidad");
@@ -219,8 +221,8 @@ public class BitacoraServiceImpl implements BitacoraService {
                 || !actor.cveUnidad().equals(contexto.cveUnidad())
                 || (StringUtils.hasText(request.cveFolioIncapacidad())
                     && !request.cveFolioIncapacidad().equals(contexto.folioIncapacidad()))) {
-            throw new EdiException(HttpStatus.FORBIDDEN, "AUTORIZACION_TRAZA_NO_PERMITIDA",
-                    "La autorizacion no corresponde a la incapacidad o al alcance del medico");
+            throw new EdiException(HttpStatus.FORBIDDEN, MensajeEdi.AUTORIZACION_TRAZA_NO_PERMITIDA.codigo(),
+                    MensajeEdi.AUTORIZACION_TRAZA_NO_PERMITIDA.textoRespaldo());
         }
         return contexto.idTransaccion();
     }
@@ -282,8 +284,8 @@ public class BitacoraServiceImpl implements BitacoraService {
         try {
             return objectMapper.writeValueAsString(contenido);
         } catch (JsonProcessingException exception) {
-            throw new EdiException(HttpStatus.BAD_REQUEST, "DETALLE_INVALIDO",
-                    "El detalle del evento no se puede serializar", exception);
+            throw new EdiException(HttpStatus.BAD_REQUEST, MensajeEdi.DETALLE_INVALIDO.codigo(),
+                    MensajeEdi.DETALLE_INVALIDO.textoRespaldo(), exception);
         }
     }
 
@@ -313,8 +315,8 @@ public class BitacoraServiceImpl implements BitacoraService {
 
     private void validarExistenciaTransaccion(Long idTransaccion) {
         if (transaccionMapper.buscarContexto(idTransaccion) == null) {
-            throw new EdiException(HttpStatus.NOT_FOUND, "TRANSACCION_NO_ENCONTRADA",
-                    "La transaccion indicada no existe");
+            throw new EdiException(HttpStatus.NOT_FOUND, MensajeEdi.TRANSACCION_NO_ENCONTRADA.codigo(),
+                    MensajeEdi.TRANSACCION_NO_ENCONTRADA.textoRespaldo());
         }
     }
 

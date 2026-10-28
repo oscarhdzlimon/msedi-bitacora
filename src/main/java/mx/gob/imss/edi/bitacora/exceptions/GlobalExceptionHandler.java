@@ -1,5 +1,7 @@
 package mx.gob.imss.edi.bitacora.exceptions;
 
+import mx.gob.imss.edi.bitacora.common.enums.MensajeEdi;
+
 import jakarta.servlet.http.HttpServletRequest;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
@@ -44,10 +46,10 @@ public class GlobalExceptionHandler {
         for (FieldError error : exception.getBindingResult().getFieldErrors()) {
             errors.putIfAbsent(error.getField(), error.getDefaultMessage());
         }
-        logException(HttpStatus.BAD_REQUEST, "SOLICITUD_INVALIDA",
-                "La solicitud contiene datos invalidos", request, exception);
-        return build(HttpStatus.BAD_REQUEST, "SOLICITUD_INVALIDA",
-                "La solicitud contiene datos invalidos", request, errors);
+        logException(HttpStatus.BAD_REQUEST, MensajeEdi.SOLICITUD_INVALIDA.codigo(),
+                MensajeEdi.SOLICITUD_INVALIDA.textoRespaldo(), request, exception);
+        return build(HttpStatus.BAD_REQUEST, MensajeEdi.SOLICITUD_INVALIDA.codigo(),
+                MensajeEdi.SOLICITUD_INVALIDA.textoRespaldo(), request, errors);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -68,18 +70,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ApiErrorResponse> handleDatabase(DataAccessException exception, HttpServletRequest request) {
-        logException(HttpStatus.SERVICE_UNAVAILABLE, "BITACORA_NO_DISPONIBLE",
-                "La bitacora no se encuentra disponible", request, exception);
-        return build(HttpStatus.SERVICE_UNAVAILABLE, "BITACORA_NO_DISPONIBLE",
-                "La bitacora no se encuentra disponible", request, Map.of());
+        logException(HttpStatus.SERVICE_UNAVAILABLE, MensajeEdi.BITACORA_NO_DISPONIBLE.codigo(),
+                MensajeEdi.BITACORA_NO_DISPONIBLE.textoRespaldo(), request, exception);
+        return build(HttpStatus.SERVICE_UNAVAILABLE, MensajeEdi.BITACORA_NO_DISPONIBLE.codigo(),
+                MensajeEdi.BITACORA_NO_DISPONIBLE.textoRespaldo(), request, Map.of());
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception exception, HttpServletRequest request) {
-        logException(HttpStatus.INTERNAL_SERVER_ERROR, "ERROR_INTERNO",
-                "Ocurrio un error interno al procesar la solicitud", request, exception);
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, "ERROR_INTERNO",
-                "Ocurrio un error interno al procesar la solicitud", request, Map.of());
+        logException(HttpStatus.INTERNAL_SERVER_ERROR, MensajeEdi.ERROR_INTERNO.codigo(),
+                MensajeEdi.ERROR_INTERNO.textoRespaldo(), request, exception);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, MensajeEdi.ERROR_INTERNO.codigo(),
+                MensajeEdi.ERROR_INTERNO.textoRespaldo(), request, Map.of());
     }
 
     private ResponseEntity<ApiErrorResponse> build(

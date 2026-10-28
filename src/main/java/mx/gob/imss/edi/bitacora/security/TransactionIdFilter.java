@@ -1,5 +1,7 @@
 package mx.gob.imss.edi.bitacora.security;
 
+import mx.gob.imss.edi.bitacora.common.enums.MensajeEdi;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -42,19 +44,19 @@ public class TransactionIdFilter extends OncePerRequestFilter {
 
         String value = request.getHeader(HEADER_NAME);
         if (value == null || value.isBlank()) {
-            writeError(request, response, 400, "TRANSACCION_REQUERIDA",
-                    "El header X-Transaccion-Id es obligatorio");
+            writeError(request, response, 400, MensajeEdi.TRANSACCION_REQUERIDA.codigo(),
+                    MensajeEdi.TRANSACCION_REQUERIDA.textoRespaldo());
             return;
         }
         try {
             if (!Long.valueOf(value).equals(principal.idTransaccion())) {
-                writeError(request, response, 403, "TRANSACCION_NO_CORRESPONDE",
-                        "La transaccion no corresponde con el Bearer Token");
+                writeError(request, response, 403, MensajeEdi.TRANSACCION_NO_CORRESPONDE.codigo(),
+                        MensajeEdi.TRANSACCION_NO_CORRESPONDE.textoRespaldo());
                 return;
             }
         } catch (NumberFormatException exception) {
-            writeError(request, response, 400, "TRANSACCION_INVALIDA",
-                    "El header X-Transaccion-Id debe ser numerico");
+            writeError(request, response, 400, MensajeEdi.TRANSACCION_INVALIDA.codigo(),
+                    MensajeEdi.TRANSACCION_INVALIDA.textoRespaldo());
             return;
         }
         filterChain.doFilter(request, response);

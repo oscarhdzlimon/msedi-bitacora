@@ -1,5 +1,7 @@
 package mx.gob.imss.edi.bitacora.security;
 
+import mx.gob.imss.edi.bitacora.common.enums.MensajeEdi;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,8 +31,8 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(response.getOutputStream(), new ApiErrorResponse(
-                OffsetDateTime.now(), 401, "Unauthorized", "TOKEN_INVALIDO",
-                "El Bearer Token es requerido, invalido o ha expirado", request.getRequestURI(),
+                OffsetDateTime.now(), 401, "Unauthorized", MensajeEdi.TOKEN_INVALIDO_TECNICO.codigo(),
+                MensajeEdi.TOKEN_INVALIDO_TECNICO.textoRespaldo(), request.getRequestURI(),
                 (String) request.getAttribute(CorrelationIdFilter.REQUEST_ATTRIBUTE), Map.of()));
     }
 }

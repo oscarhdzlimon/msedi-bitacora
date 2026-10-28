@@ -288,3 +288,12 @@ jwt:
 ## HU003 Eventos ST7 posteriores a la autorizacion (2026-10-23)
 
 Los eventos ST7_ENVIO_INICIADO, ST7_ENVIO_EXITOSO, ST7_ENVIO_ERROR_REINTENTABLE, ST7_ENVIO_NO_REINTENTABLE, ST7_REINTENTO_SOLICITADO, ST7_REINTENTO_EXITOSO y ST7_REINTENTO_ERROR pueden publicarse desde la sesion de un autorizador. Expedicion presenta una credencial interna con la identidad y transaccion de esa sesion, idAutorizacion e idIncapacidad. Bitacora valida perfil, OOAD y presupuesto de la unidad, resuelve la transaccion original y conserva id_transaccion_actor y ref_sesion. Una sesion ordinaria de tratante mantiene el registro ST7 sobre su propia transaccion. No hay nuevos campos ni eventos de catalogo.
+
+## Centralización de mensajes
+
+Los códigos y respaldos utilizados por el micro se referencian desde el enum local
+`common.enums.MensajeEdi`, tanto en excepciones como en auditoría y respuestas.
+Los resolutores conservan la prioridad del texto activo en PostgreSQL; el enum no
+sustituye la base ni restringe mensajes dinámicos recibidos de otros servicios.
+Las variantes DETALLE mantienen el texto específico del contexto, sin crear claves
+nuevas. Esta refactorización no cambia estados HTTP, contratos ni reglas funcionales.
