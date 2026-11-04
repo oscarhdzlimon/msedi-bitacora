@@ -319,3 +319,14 @@ del catálogo no recrea eventos históricos rechazados ni inventa fechas de ocur
 La incapacidad conserva su transacción de origen. El actor conserva la transacción validada del acceso o de la ejecución batch. Se persisten eventos en outbox en la misma transacción funcional y se publican con credencial SERVICIO_BITACORA de msedi-evaluacion-riesgos, scope edi:bitacora:riesgos. Bitácora verifica UUID y contenido contra la evidencia durable; deduplica por UUID. No se almacenan tokens. Las decisiones confirman evidencia durable antes de responder y la entrega central se reintenta.
 
 HU003: la consulta de evidencia durable de riesgos se realiza mediante un mapper MyBatis. Los servicios mantienen la validación y coordinación; no ejecutan SQL con JdbcTemplate.
+
+
+## HU003 / HU047: consulta individual de fuentes (2026-11-04)
+
+La capacidad HU003-CA01 registra `CONSULTA_FUENTE_RIESGO`, emitido por
+Integraciones al consultar ACCEDER, SIAP o SINDO, cuando su clave existe
+activa en PostgreSQL. El contrato mantiene SELECT y el resultado original.
+Se conserva HU003-CA02 y el rechazo `EVENTO_NO_SOPORTADO` para eventos
+inexistentes o inactivos. La correccion manual esta en
+`config/sql/20261104_evento_consulta_fuente_riesgo.sql`; no usa IDs fijos,
+no cambia eventos del motor y no reconstruye publicaciones rechazadas.

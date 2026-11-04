@@ -159,4 +159,24 @@ class BitacoraServiceImplTest {
                 "proceso", "EXITOSA", "usr-1", "ACCESO_EDI", null, null, detalle,
                 ocurrencia, ocurrencia.plusSeconds(1));
     }
+
+    @Test
+    void hu003Ca01RegistraConsultaFuenteRiesgoActivaConResultadoOriginal() {
+        when(securityContextService.validarTransaccion(12L)).thenReturn(principal);
+        when(eventoMapper.buscarActivoPorClave("CONSULTA_FUENTE_RIESGO"))
+                .thenReturn(new EventoCatalogoDto(999L,"CONSULTA_FUENTE_RIESGO"));
+        when(transaccionMapper.buscarContexto(12L)).thenReturn(new TransaccionContextoDto(12L,2L,"SIMF","tx-1"));
+        when(mensajeMapper.idActivoPorClave("MSG053")).thenReturn(53L);
+        when(bitacoraMapper.insertar(any())).thenAnswer(invocation -> {
+            EventoBitacoraRegistro row = invocation.getArgument(0); row.setIdEventoBitacora(101L); return 1;
+        });
+        var request = new RegistroEventoRequest("CONSULTA_FUENTE_RIESGO","SELECT","INFORMACION_OBTENIDA",
+                OffsetDateTime.now(),"MSG053","ACCEDER",null,Map.of("requiereReintento",false));
+        assertThat(service.registrar(12L,request,"127.0.0.1").idEventoBitacora()).isEqualTo(101L);
+        var captor = ArgumentCaptor.forClass(EventoBitacoraRegistro.class);
+        verify(bitacoraMapper).insertar(captor.capture());
+        assertThat(captor.getValue().getIdEvento()).isEqualTo(999L);
+        assertThat(captor.getValue().getCveOperacion()).isEqualTo("select");
+        assertThat(captor.getValue().getRefResultado()).isEqualTo("INFORMACION_OBTENIDA");
+    }
 }
