@@ -94,3 +94,6 @@ No se usa un numero de secuencia funcional fijo. El orden se determina mediante 
 - Autenticacion entre microservicios.
 - Sincrono u outbox para cada nivel de criticidad.
 - Roles autorizados para consulta.
+
+## HU003 / HU043-HU062 — Motor y DPES
+La incapacidad conserva su transacción de origen. El actor conserva la transacción validada del acceso o de la ejecución batch. Se persisten eventos en outbox en la misma transacción funcional y se publican con credencial SERVICIO_BITACORA de msedi-evaluacion-riesgos, scope edi:bitacora:riesgos. Bitácora verifica UUID y contenido contra la evidencia durable; deduplica por UUID. No se almacenan tokens. Las decisiones confirman evidencia durable antes de responder y la entrega central se reintenta.

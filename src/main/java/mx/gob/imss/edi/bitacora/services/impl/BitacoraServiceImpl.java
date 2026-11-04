@@ -1,15 +1,20 @@
 package mx.gob.imss.edi.bitacora.services.impl;
 
-import mx.gob.imss.edi.bitacora.common.enums.MensajeEdi;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import mx.gob.imss.edi.bitacora.common.constants.OperacionBitacora;
+import mx.gob.imss.edi.bitacora.common.enums.MensajeEdi;
 import mx.gob.imss.edi.bitacora.exceptions.EdiException;
 import mx.gob.imss.edi.bitacora.models.dto.EventoBitacoraRegistro;
 import mx.gob.imss.edi.bitacora.models.dto.EventoCatalogoDto;
@@ -21,20 +26,57 @@ import mx.gob.imss.edi.bitacora.models.response.EventoConsultaResponse;
 import mx.gob.imss.edi.bitacora.models.response.RegistroEventoResponse;
 import mx.gob.imss.edi.bitacora.repository.EventoBitacoraMapper;
 import mx.gob.imss.edi.bitacora.repository.EventoMapper;
+import mx.gob.imss.edi.bitacora.repository.EventoPendienteRiesgosMapper;
 import mx.gob.imss.edi.bitacora.repository.MensajeMapper;
 import mx.gob.imss.edi.bitacora.repository.TransaccionConsultaMapper;
 import mx.gob.imss.edi.bitacora.security.JwtPrincipal;
 import mx.gob.imss.edi.bitacora.security.SecurityContextService;
 import mx.gob.imss.edi.bitacora.services.BitacoraService;
 import mx.gob.imss.edi.bitacora.services.DatosSensiblesService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @Service
 public class BitacoraServiceImpl implements BitacoraService {
 
+    private EventoPendienteRiesgosMapper trazaMapper;
     private final EventoMapper eventoMapper;
     private final MensajeMapper mensajeMapper;
     private final TransaccionConsultaMapper transaccionMapper;
@@ -43,7 +85,21 @@ public class BitacoraServiceImpl implements BitacoraService {
     private final DatosSensiblesService datosSensiblesService;
     private final ObjectMapper objectMapper;
 
+    
+    @Autowired
     public BitacoraServiceImpl(
+            EventoMapper eventoMapper,
+            MensajeMapper mensajeMapper,
+            TransaccionConsultaMapper transaccionMapper,
+            EventoBitacoraMapper bitacoraMapper,
+            SecurityContextService securityContextService,
+            DatosSensiblesService datosSensiblesService,
+            ObjectMapper objectMapper, EventoPendienteRiesgosMapper trazaMapper) {
+        this(eventoMapper, mensajeMapper, transaccionMapper, bitacoraMapper, securityContextService, datosSensiblesService, objectMapper);
+        this.trazaMapper = trazaMapper;
+    }
+
+public BitacoraServiceImpl(
             EventoMapper eventoMapper,
             MensajeMapper mensajeMapper,
             TransaccionConsultaMapper transaccionMapper,
@@ -64,6 +120,7 @@ public class BitacoraServiceImpl implements BitacoraService {
     @Transactional
     public RegistroEventoResponse registrar(Long idTransaccion, RegistroEventoRequest request, String terminal) {
         JwtPrincipal principal = securityContextService.validarTransaccion(idTransaccion);
+        Map<String,Object> entrega=validarEntregaRiesgos(principal,request);
         String cveEvento = request.cveEvento().strip().toUpperCase(Locale.ROOT);
         EventoCatalogoDto evento = eventoMapper.buscarActivoPorClave(cveEvento);
         if (evento == null) {
@@ -88,6 +145,10 @@ public class BitacoraServiceImpl implements BitacoraService {
                     MensajeEdi.TRANSACCION_NO_ENCONTRADA_DETALLE_2.codigo(), MensajeEdi.TRANSACCION_NO_ENCONTRADA_DETALLE_2.textoRespaldo());
         }
 
+        if(entrega!=null){
+            transaccion=transaccionMapper.buscarContexto(((Number)entrega.get("id_transaccion_origen")).longValue());
+            if(transaccion==null)throw new EdiException(HttpStatus.NOT_FOUND,MensajeEdi.TRANSACCION_NO_ENCONTRADA.codigo(),MensajeEdi.TRANSACCION_NO_ENCONTRADA.textoRespaldo());
+        }
         String codigoMensaje = codigoMensaje(request);
         Long idMensaje = null;
         if (codigoMensaje != null) {
@@ -104,8 +165,14 @@ public class BitacoraServiceImpl implements BitacoraService {
         EventoBitacoraRegistro registro = crearRegistro(
                 transaccion.idTransaccion(), request, terminal, principal, transaccion, evento,
                 idMensaje, codigoMensaje, operacion);
-        registro.setRefClaveDeduplicacion(claveResumen(cveEvento, request));
-        if (registro.getRefClaveDeduplicacion() != null) {
+        if(entrega!=null){
+            registro.setIdTransaccionActor(((Number)entrega.get("id_transaccion_actor")).longValue());
+            registro.setCveUsuario((String)entrega.get("cve_usuario"));registro.setRefPerfilUsuario((String)entrega.get("ref_perfil_usuario"));
+            registro.setRefNombreUsuario((String)entrega.get("ref_nombre_usuario"));registro.setRefSesion((String)entrega.get("ref_sesion"));
+            registro.setRefClaveDeduplicacion("RIESGOS:"+entrega.get("id_evento_pendiente"));
+            Long existente=bitacoraMapper.buscarDuplicado(registro);if(existente!=null)return new RegistroEventoResponse(existente);
+        }else registro.setRefClaveDeduplicacion(claveResumen(cveEvento, request));
+        if (entrega==null && registro.getRefClaveDeduplicacion() != null) {
             // Serializar solo este resumen/etapa. Permite A -> B -> A, sin repetir A -> A.
             bitacoraMapper.bloquearResumen(registro);
             var anterior = bitacoraMapper.ultimoResumen(registro);
@@ -158,6 +225,27 @@ public class BitacoraServiceImpl implements BitacoraService {
                 filtros.fechaInicio(), filtros.fechaFin(), filtros.cveEvento(), filtros.resultado()));
     }
 
+    private Map<String,Object> validarEntregaRiesgos(JwtPrincipal actor,RegistroEventoRequest request){
+        boolean servicio="msedi-evaluacion-riesgos".equals(actor.subject()) && "SERVICIO_BITACORA".equals(actor.tokenType()) && "edi:bitacora:riesgos".equals(actor.scope());
+        if(!servicio)return null;
+        try{
+            Object id=request.detalle()==null?null:request.detalle().get("idEntrega");
+            UUID clave=UUID.fromString(String.valueOf(id));
+            var filas=trazaMapper.consultarEntrega(clave);
+            if(filas.size()!=1)throw new IllegalArgumentException();var f=filas.getFirst();
+            if(!actor.idTransaccion().equals(((Number)f.get("id_transaccion_actor")).longValue()) || !mismoContenido(f.get("ref_evento_json").toString(),request))throw new IllegalArgumentException();
+            return f;
+        }catch(Exception e){throw new EdiException(HttpStatus.FORBIDDEN,"TRAZA_RIESGOS_NO_PERMITIDA","El evento no corresponde a evidencia persistida del motor");}
+    }
+
+    private boolean mismoContenido(String almacenado,RegistroEventoRequest recibido)throws JsonProcessingException{
+        var esperado=objectMapper.readValue(almacenado,RegistroEventoRequest.class);
+        if(!esperado.stpOcurrencia().isEqual(recibido.stpOcurrencia()))return false;
+        var a=(ObjectNode)objectMapper.readTree(objectMapper.writeValueAsString(esperado));
+        var b=(ObjectNode)objectMapper.readTree(objectMapper.writeValueAsString(recibido));
+        a.remove("stpOcurrencia");b.remove("stpOcurrencia");return a.equals(b);
+    }
+
     private EventoBitacoraRegistro crearRegistro(
             Long idTransaccion,
             RegistroEventoRequest request,
@@ -189,12 +277,12 @@ public class BitacoraServiceImpl implements BitacoraService {
         return registro;
     }
 
-    private static final java.util.Set<String> EVENTOS_AUTORIZACION = java.util.Set.of(
+    private static final Set<String> EVENTOS_AUTORIZACION = Set.of(
             "AUTORIZACION_APROBADA", "AUTORIZACION_NO_AUTORIZADA",
             "CERTIFICADO_AUTORIZACION_GENERADO", "CERTIFICADO_AUTORIZACION_ERROR",
             "DOCUMENTO_AUTORIZACION_CORREO_ENVIADO", "DOCUMENTO_AUTORIZACION_CORREO_ERROR");
 
-    private static final java.util.Set<String> EVENTOS_ST7 = java.util.Set.of(
+    private static final Set<String> EVENTOS_ST7 = Set.of(
             "ST7_ENVIO_INICIADO", "ST7_ENVIO_EXITOSO", "ST7_ENVIO_ERROR_REINTENTABLE", "ST7_ENVIO_NO_REINTENTABLE",
             "ST7_REINTENTO_SOLICITADO", "ST7_REINTENTO_EXITOSO", "ST7_REINTENTO_ERROR");
 
@@ -215,7 +303,7 @@ public class BitacoraServiceImpl implements BitacoraService {
         Long autorizacion = identificador(request.detalle(), "idAutorizacion");
         Long incapacidad = identificador(request.detalle(), "idIncapacidad");
         var contexto = autorizacion == null ? null : transaccionMapper.buscarAutorizacion(autorizacion);
-        if (contexto == null || !java.util.Objects.equals(contexto.idIncapacidad(), incapacidad)
+        if (contexto == null || !Objects.equals(contexto.idIncapacidad(), incapacidad)
                 || !StringUtils.hasText(actor.cveOoad()) || !StringUtils.hasText(actor.cveUnidad())
                 || !actor.cveOoad().equals(contexto.cveOoad())
                 || !actor.cveUnidad().equals(contexto.cveUnidad())
@@ -248,11 +336,11 @@ public class BitacoraServiceImpl implements BitacoraService {
         try {
             JsonNode medico = objectMapper.readTree(payload).path("medico");
             if (!actor.matricula().equals(medico.path("matricula").asText())
-                    || !java.util.Objects.equals(actor.perfil(), medico.path("perfil").asText(null))) return;
+                    || !Objects.equals(actor.perfil(), medico.path("perfil").asText(null))) return;
             String nombre = medico.path("nombreCompleto").asText("").strip();
-            if (nombre.isEmpty()) nombre = java.util.stream.Stream.of("nombres", "apellidoPaterno", "apellidoMaterno")
+            if (nombre.isEmpty()) nombre = Stream.of("nombres", "apellidoPaterno", "apellidoMaterno")
                     .map(c -> medico.path(c).asText("").strip()).filter(v -> !v.isEmpty())
-                    .collect(java.util.stream.Collectors.joining(" "));
+                    .collect(Collectors.joining(" "));
             registro.setRefNombreUsuario(nombre.isEmpty() ? null : nombre.substring(0, Math.min(nombre.length(), 150)));
         } catch (JsonProcessingException ex) {
             // Conservar matricula/perfil firmados aunque un acceso historico tenga JSON invalido.
@@ -260,11 +348,11 @@ public class BitacoraServiceImpl implements BitacoraService {
     }
 
     private String claveResumen(String evento, RegistroEventoRequest request) {
-        if (!java.util.Set.of("NSSA_ANTECEDENTES_CONSULTADOS", "SIST_DICTAMENES_CONSULTADOS").contains(evento)
+        if (!Set.of("NSSA_ANTECEDENTES_CONSULTADOS", "SIST_DICTAMENES_CONSULTADOS").contains(evento)
                 || !"EXITOSA".equals(request.resultado()) || request.detalle() == null) return null;
         Object etapa = request.detalle().get("etapa");
         Object huella = request.detalle().get("huellaResultado");
-        if (!(etapa instanceof String fase) || !java.util.Set.of("CAPTURA", "REGISTRO").contains(fase)
+        if (!(etapa instanceof String fase) || !Set.of("CAPTURA", "REGISTRO").contains(fase)
                 || !(huella instanceof String hash) || !hash.matches("[a-f0-9]{64}")) return null;
         return fase + ":" + hash;
     }

@@ -314,3 +314,8 @@ del workspace. No se inicializan catálogos desde el arranque del servicio.
 Se mantienen la resolución por clave, el rechazo EVENTO_NO_SOPORTADO para claves
 inexistentes/inactivas y la inmutabilidad de los eventos registrados. La reparación
 del catálogo no recrea eventos históricos rechazados ni inventa fechas de ocurrencia.
+
+## HU003 / HU043-HU062 — Motor y DPES
+La incapacidad conserva su transacción de origen. El actor conserva la transacción validada del acceso o de la ejecución batch. Se persisten eventos en outbox en la misma transacción funcional y se publican con credencial SERVICIO_BITACORA de msedi-evaluacion-riesgos, scope edi:bitacora:riesgos. Bitácora verifica UUID y contenido contra la evidencia durable; deduplica por UUID. No se almacenan tokens. Las decisiones confirman evidencia durable antes de responder y la entrega central se reintenta.
+
+HU003: la consulta de evidencia durable de riesgos se realiza mediante un mapper MyBatis. Los servicios mantienen la validación y coordinación; no ejecutan SQL con JdbcTemplate.
